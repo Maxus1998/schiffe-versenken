@@ -1,7 +1,7 @@
 # schiffe-versenken
 Aufgabe aus der C++ Vorlesung 2018
 
-Nachrichten:
+Nachrichten:<br/>
 Jede Nachricht hat einen 1 Byte großen Header. Das erste Bit ist entweder 0 wenn es eine vom Client ausgehende Nachricht ist
 und 1 wenn sie vom Server ausgeht. Die restlichen Bits dtehen für die Bedeutung der Nachricht, damit der Client und der Server wissen,
 was sie mit der Nachricht machen müssen.
@@ -60,4 +60,4 @@ Nachrichten vom Server:
           geschossen hat das letzte Schiff des andern Spielers versenkt hat. Hiermit hat dieser Spieler gewonnen.
         - Header: 10000101
         - Body: 1 Byte (Zahl 0-99) + 1 Byte (1. Bit: welcher Spieler
-                                             2. Bit: Treffer oder kein Treffer)  
+                                             2. Bit: Treffer oder kein Treffer)
