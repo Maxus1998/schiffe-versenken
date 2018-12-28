@@ -32,7 +32,11 @@ Nachrichten vom Client:<br/>
           Ist der Name bereits vergeben, so gibt der Server eine Fehlernachricht zurück.<br/>
         - Header: 00000101 (5)<br/>
         - Body: Chararray(maximale Namenslänge: 15 Zeichen, Chararray Länge von 16)<br/>
-    7. Error:<br/>
+    7. Delete game:<br/>
+        - Beschreibung: Ein Client, der ein Spiel erstellt hat und auf einen Spieler wartet, kann mit dieser Nachricht die Spielersuche abbrechen.<br/>
+        - Header: 00000110<br/>
+        - Body: leer<br/>
+    8. Error:<br/>
         - Beschreibung: Falls ein Fehler auf Clientseite registriert wird, zum Beispiel wenn eine Nachricht mit ungültigem Header vom Server kommt.<br/>
         - Header: 01111111 (127)<br/>
         - Body: leer<br/>
@@ -80,7 +84,15 @@ Nachrichten vom Server:<br/>
         - Header: 10001000 (136)<br/>
         - Body: 1 Byte(Anzahl an Spielzügen, Anzahl an Spielzügen * 2 = Anzahl an Byte, die man zusätzlich zu den gesetzten Schiffen noch lesen muss) + 20 Byte (gesetzte Schiffe, für nähere Information
           siehe Set Ships bei Client) + Anzahl an Spielzügen * 2 Byte(Spielzüge)<br/>
-    10. Error:<br/>
+    10. Name set:<br/>
+        - Beschreibung: Bestätigung an den Client, dass der Name erfolgreich gesetzt wurde.<br/>
+        - Header: 10001001<br/>
+        - Body: leer<br/>
+    11. Game deleted:<br/>
+        - Beschreibung: Das Spiel eines Clients, der bis eben noch einen anderen Spieler gesucht hat, wurde erfolgreich gelöscht.<br/>
+        - Header: 10001010<br/>
+        - Body: leer<br/>
+    11. Error:<br/>
         - Beschreibung: Falls ein Fehler auf Serverseite registriert wird, zum Beispiel wenn eine Nachricht mit ungültigem Header vom Client kommt.<br/>
         - Header: 11111111 (255)<br/>
         - Body: leer<br/>
