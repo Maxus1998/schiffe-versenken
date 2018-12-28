@@ -54,12 +54,28 @@ public:
 
   void deliver(const chat_message& msg)
   {
-    recent_msgs_.push_back(msg);
-    while (recent_msgs_.size() > max_recent_msgs)
-      recent_msgs_.pop_front();
-
-    for (auto participant: participants_)
-      participant->deliver(msg);
+    switch(int(reinterpret_cast<const unsigned char&>(msg.data()[0]))) {
+        case 0:
+            std::cout << "Create game!";
+            break;
+        case 1:
+            std::cout << "Request players!";
+            break;
+        case 2:
+            std::cout << "Join player " << msg.body() << "!";
+            break;
+        case 3:
+            std::cout << "Set Ships!";
+            break;
+        case 4:
+            std::cout << "Shoot at " << int(msg.body()) << "!";
+            break;
+        case 5:
+            std::cout << "Send name " << msg.body() << "!";
+            break;
+        case 127:
+            std::cout << "Error!";
+    }
   }
 
 private:
@@ -100,20 +116,35 @@ public:
 private:
   void do_read_header()
   {
-    auto self(shared_from_this());
-    boost::asio::async_read(socket_,
-        boost::asio::buffer(read_msg_.data(), chat_message::header_length),
-        [this, self](boost::system::error_code ec, std::size_t /*length*/)
-        {
-          if (!ec && read_msg_.decode_header())
+      auto self(shared_from_this());
+      boost::asio::async_read(socket_,
+          boost::asio::buffer(read_msg_.data(), chat_message::header_length),
+            [this, self](boost::system::error_code ec, std::size_t /*length*/)
           {
-            do_read_body();
-          }
-          else
-          {
-            room_.leave(shared_from_this());
-          }
-        });
+              if (!ec && read_msg_.decode_header())
+              {
+                  if (int(reinterpret_cast<unsigned char&>(read_msg_.data()[0])) >= 128) {
+                      chat_message error;
+                      error.encode_header(0b11111111);
+                      room_.deliver(error);
+                  } else {
+                      switch(int(reinterpret_cast<unsigned char&>(read_msg_.data()[0]))) {
+                          case 0:
+                          case 1:
+                          case 127:
+                              room_.deliver(read_msg_);
+                              do_read_header();
+                              break;
+                          default:
+                              do_read_body();
+                      }
+                  }
+              }
+              else
+              {
+                  room_.leave(shared_from_this());
+              }
+          });
   }
 
   void do_read_body()
@@ -127,7 +158,7 @@ private:
           {
             room_.deliver(read_msg_);
             do_read_header();
-            std::cout << read_msg_.body();
+            //std::cout << read_msg_.body();
           }
           else
           {

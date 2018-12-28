@@ -64,7 +64,11 @@ private:
         {
           if (!ec && read_msg_.decode_header())
           {
-            do_read_body();
+            if (read_msg_.body_length() > 0) {
+                do_read_body();
+            } else {
+                std::cout << "error";
+            }
           }
           else
           {
@@ -149,13 +153,50 @@ int main(int argc, char* argv[])
       }
       std::cout << std::endl;
 
-      header = static_cast<char>(input1);
-      std::cout << "Please choose Body" << std::endl;
-      std::cin >> line;
-      std::cout << std::endl;
+      switch(input1) {
+          case 0: header = 0b00000000;
+                  break;
+          case 1: header = 0b00000001;
+                  break;
+          case 2: header = 0b00000010;
+                  break;
+          case 3: header = 0b00000011;
+                  break;
+          case 4: header = 0b00000100;
+                  break;
+          case 5: header = 0b00000101;
+                  break;
+          case 127: header = 0b01111111;
+                    break;
+          case 128: header = 0b10000000;
+                    break;
+          case 129: header = 0b10000001;
+                    break;
+          case 130: header = 0b10000010;
+                    break;
+          case 131: header = 0b10000011;
+                    break;
+          case 132: header = 0b10000100;
+                    break;
+          case 133: header = 0b10000101;
+                    break;
+          case 134: header = 0b10000110;
+                    break;
+          case 135: header = 0b10000111;
+                    break;
+          case 136: header = 0b10001000;
+                    break;
+          case 255: header = 0b11111111;
+                    break;
+      }
       chat_message msg;
       msg.encode_header(header);
-      std::memcpy(msg.body(), line, msg.body_length());
+      if (input1 != 0 && input1 != 1 && input1 != 127) {
+          std::cout << "Please choose Body" << std::endl;
+          std::cin >> line;
+          std::cout << std::endl;
+          std::memcpy(msg.body(), line, msg.body_length());
+      }
       c -> write(msg);
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
