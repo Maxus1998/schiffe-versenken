@@ -96,7 +96,7 @@ public:
                     break;
             case 135: body_length(2);
                     break;
-            case 136: body_length(21 + variableLength); //TODO
+            case 136: body_length(21 + variableLength);
                     break;
             case 255: body_length(0);
                     break;
