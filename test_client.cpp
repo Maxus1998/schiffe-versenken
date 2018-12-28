@@ -64,10 +64,13 @@ private:
         {
           if (!ec && read_msg_.decode_header())
           {
+            std::cout << int(read_msg_.data()[0]);
             if (read_msg_.body_length() > 0) {
                 do_read_body();
             } else {
+                if (read_msg_.data()[0] == - 1)
                 std::cout << "error";
+                do_read_header();
             }
           }
           else
@@ -145,6 +148,7 @@ int main(int argc, char* argv[])
     while(true) {
       char header;
       int input1;
+      int input2;
       char line[chat_message::max_body_length + 1] = "";
       std::cout << "Please choose Header" << std::endl;
       std::cin >> input1;
@@ -166,6 +170,8 @@ int main(int argc, char* argv[])
                   break;
           case 5: header = 0b00000101;
                   break;
+          case 6: header = 0b00000110;
+                  break;
           case 127: header = 0b01111111;
                     break;
           case 128: header = 0b10000000;
@@ -186,15 +192,28 @@ int main(int argc, char* argv[])
                     break;
           case 136: header = 0b10001000;
                     break;
+          case 137: header = 0b10001001;
+                    break;
+          case 138: header = 0b10001010;
+                    break;
           case 255: header = 0b11111111;
                     break;
       }
       chat_message msg;
       msg.encode_header(header);
-      if (input1 != 0 && input1 != 1 && input1 != 127) {
+      if (input1 != 0 && input1 != 1 && input1 != 6 && input1 != 127) {
           std::cout << "Please choose Body" << std::endl;
-          std::cin >> line;
-          std::cout << std::endl;
+          if (input1 == 2 || input1 == 5) {
+              std::cin >> line;
+              std::cout << std::endl;
+          } else {
+              std::cin >> input2;
+              line[0] = input2;
+              if (input1 == 3) {
+                  std::cin >> input2;
+                  line[1] = input2;
+              }
+          }
           std::memcpy(msg.body(), line, msg.body_length());
       }
       c -> write(msg);

@@ -78,6 +78,8 @@ public:
                     break;
             case 0b00000101: body_length(16);
                     break;
+            case 0b00000110: body_length(0);
+                    break;
             case 0b01111111: body_length(0);
                     break;
             case 0b10000000: body_length(0);
@@ -97,6 +99,10 @@ public:
             case 0b10000111: body_length(2);
                     break;
             case 0b10001000: body_length(21 + variableLength);
+                    break;
+            case 0b10001001: body_length(0);
+                    break;
+            case 0b10001010: body_length(0);
                     break;
             case 0b11111111: body_length(0);
                     break;
