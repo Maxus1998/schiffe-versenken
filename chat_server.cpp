@@ -127,6 +127,7 @@ private:
           {
             room_.deliver(read_msg_);
             do_read_header();
+            std::cout << read_msg_.body();
           }
           else
           {
