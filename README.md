@@ -72,13 +72,15 @@ Nachrichten vom Server:<br/>
         - Beschreibung: Gibt beiden Clients Bescheid, wohin und von welchem Spieler geschossen wurde und ob es ein Treffer war oder nicht.<br/>
         - Header: 10000110 (134)<br/>
         - Body: 1 Byte (Zahl 0-99) + 1 Byte (1. Bit: welcher Spieler
-                                             2. Bit: Treffer oder kein Treffer)<br/>
+                                             2. Bit: Treffer oder kein Treffer)
+                                             3. Bit: versenkt oder nicht versenkt<br/>
     8. Zugergebnis (2):<br/>
         - Beschreibung: Gleich wie Zugergebnis (1), allerdins ist das die Endnachricht. Sie signalisiert, dass der Spieler, der gerade
           geschossen hat das letzte Schiff des andern Spielers versenkt hat. Hiermit hat dieser Spieler gewonnen.<br/>
         - Header: 10000111 (135)<br/>
         - Body: 1 Byte (Zahl 0-99) + 1 Byte (1. Bit: welcher Spieler
-                                             2. Bit: Treffer oder kein Treffer)<br/>
+                                             2. Bit: Treffer oder kein Treffer)
+                                             3. Bit: versenkt oder nicht versenkt<br/>
     9. Initialize game:<br/>
         - Beschreibung: Falls ein Spieler ein Spiel verlässt, kann ein anderer Spieler dem laufenden Spiel beitreten. Dieser erhält dann eine Nachricht mit den Koordinaten seiner Schiffe
           und alle bisher vollzogenen Spielzüge.<br/>
