@@ -18,6 +18,7 @@
 #include <string>
 #include <boost/asio.hpp>
 #include "chat_message.hpp"
+#include "Schiffe_versenken.hpp"
 
 using boost::asio::ip::tcp;
 
@@ -36,6 +37,7 @@ public:
   std::string name_ = "";
   std::shared_ptr<game_room> game_room_;
   bool isInAGame_ = false;
+  bool player;
 };
 
 typedef std::shared_ptr<chat_participant> chat_participant_ptr;
@@ -71,10 +73,69 @@ public:
 
 class game_room : public room {
 public:
+    Schiffe_versenken game;
+
+    int setShip(chat_participant_ptr participant, const char space, const char shipInfo) {
+        int shipType;
+        bool horizontal;
+        if ((shipInfo >> 0) & 1) {
+            if ((shipInfo >> 1) & 1) {
+                shipType = 2;
+                std::cout << "submarine";
+            } else {
+                shipType = 4;
+                std::cout << "cruiser";
+            }
+        } else {
+            if ((shipInfo >> 1) & 1) {
+                shipType = 3;
+                std::cout << "destroyer";
+            } else {
+                shipType = 5;
+                std::cout << "battleship";
+            }
+        }
+        if ((shipInfo >> 2) & 1) {
+            horizontal = true;
+        } else {
+            horizontal = false;
+        }
+        return game.setShip(int(space), horizontal, participant -> player, shipType);
+    }
+
+    void sendSetShips(chat_participant_ptr &participant, int rc) {
+        chat_message confirm;
+        switch(rc) {
+            case 0: sendErrorMessage(participant);
+                    break;
+            case 1: confirm.encode_header(0b10000011);
+                    participant -> deliver(confirm);
+                    break;
+            case 2: confirm.encode_header(0b10000100);
+                    char x;
+                    if (participant -> player) {
+                        x |= 1 << 0;
+                    } else {
+                        x |= 0 << 0;
+                    }
+                    std::memcpy(confirm.body(), &x, confirm.body_length());
+                    for (chat_participant_ptr x : participant -> game_room_ -> participants_) {
+                        x->deliver(confirm);
+                    }
+                    break;
+            case 3: confirm.encode_header(0b10000101);
+                    for (chat_participant_ptr x : participant -> game_room_ -> participants_) {
+                        x->deliver(confirm);
+                    }
+                    break;
+        }
+    }
+
     void deliver (const chat_message& msg, chat_participant_ptr participant) override{
         switch(int(reinterpret_cast<const unsigned char&>(msg.data()[0]))) {
             case 3:
-                std::cout << "Set Ship at " << int(msg.body()[0]) << " " << int(msg.body()[1]);
+                std::cout << "Set Ship";
+                sendSetShips(participant, setShip(participant, msg.body()[0], msg.body()[1]));
                 break;
             case 4:
                 std::cout << "Shoot at " << int(msg.body()[0]) << "!";
@@ -116,6 +177,7 @@ public:
         searchingParticipants_.insert(participant);
         participant -> game_room_ = std::make_shared<game_room>();
         participant -> game_room_ -> join(participant);
+        participant -> player = true;
         return true;
     }
 
@@ -156,6 +218,7 @@ public:
             stopSearching(joinedPlayer);
             participant -> isInAGame_ = true;
             joinedPlayer -> isInAGame_ = true;
+            participant -> player = false;
         }
         return rc;
     }
@@ -189,7 +252,7 @@ public:
                         }
                     }
                     char body[16] = "";
-                    
+
                     std::memcpy(body, participant -> name_.c_str(), participant -> name_.length() + 1);
                     std::memcpy(confirm.body(), body, confirm.body_length());
                     joinedPlayer -> deliver(confirm);

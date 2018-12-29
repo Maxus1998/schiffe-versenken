@@ -13,7 +13,7 @@ endif()
 
 
 add_executable(schiffe-versenken main.cpp)
-add_executable(server chat_server.cpp)
+add_executable(server chat_server.cpp Schiffe_versenken.cpp Schiffe_versenken.hpp)
 add_executable(client chat_client.cpp)
 add_executable(test_client test_client.cpp)
 

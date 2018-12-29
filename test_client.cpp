@@ -64,7 +64,7 @@ private:
         {
           if (!ec && read_msg_.decode_header())
           {
-            //std::cout << int(read_msg_.data()[0]);
+            std::cout << int(read_msg_.data()[0]) << std::endl;
             if (read_msg_.body_length() > 0) {
                 do_read_body();
             } else {
@@ -90,6 +90,7 @@ private:
           if (!ec)
           {
             std::cout.write(read_msg_.body(), read_msg_.body_length());
+            //std::cout << ((read_msg_.body()[0] >> 0 ) & 1);
             std::cout << "\n";
             do_read_header();
           }
@@ -210,11 +211,33 @@ int main(int argc, char* argv[])
               std::cin >> line;
               std::cout << std::endl;
           } else {
+              char x = 0;
               std::cin >> input2;
               line[0] = input2;
               if (input1 == 3) {
+                  std::cout << "choose ship" << std::endl;
                   std::cin >> input2;
-                  line[1] = input2;
+                  switch (input2) {
+                      case 0: x |= 0 << 0;
+                              x |= 0 << 1; //battleship
+                              break;
+                      case 1: x |= 1 << 0;
+                              x |= 0 << 1; //cruiser
+                              break;
+                      case 2: x |= 0 << 0;
+                              x |= 1 << 1; //destroyer
+                              break;
+                      case 3: x |= 1 << 0;
+                              x |= 1 << 1; //submarine
+                  }
+                  std::cout << "horizontal or vertical?" << std::endl;
+                  std::cin >> input2;
+                  if (input2 == 1) {
+                      x |= 1 << 2; //horizontal
+                  } else {
+                      x |= 0 << 2; //vertical
+                  }
+                  line[1] = x;
               }
           }
           std::memcpy(msg.body(), line, msg.body_length());
