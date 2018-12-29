@@ -51,10 +51,11 @@ Nachrichten vom Server:<br/>
         - Header: 10000001 (129)<br/>
         - Body: Chararray (mehrere Nachrichten)<br/>
     3. Game joined:<br/>
-        - Beschreibung: Gibt dem suchenden Client Bescheid, dass ein Spieler seinem Spiel beigetreten ist und sagt<br/>
-          dem Spieler, der einem Spiel beitreten will, dass er erfolgreich beigetreten ist.<br/>
+        - Beschreibung: Gibt dem suchenden Client Bescheid, dass ein Spieler seinem Spiel beigetreten ist und sagt
+          dem Spieler, der einem Spiel beitreten will, dass er erfolgreich beigetreten ist.(Er sendet beiden Spielern
+          den Namen des jeweils anderen Spielers)<br/>
         - Header: 10000010 (130)<br/>
-        - Body: leer<br/>
+        - Body: Chararray<br/>
     4. Schiff gesetzt:<br/>
         - Beschreibung: Gibt dem Client, der gerade ein Schiff gesetzt hat, Bescheid, dass das Schiff erfolgreich gesetzt wurde.<br/>
         - Header: 10000011 (131)<br/>
