@@ -23,7 +23,7 @@ Nachrichten vom Client:<br/>
           Ausrichtung des Schiffs(horizontal/vertikal)<br/>
         - Header: 00000011 (3)<br/>
         - Body: 1 Byte (Zahl 0-99) + 1 Byte (1. + 2. Bit: welches Schiff (00: Battleship, 01: Cruiser, 10: Destroyer, 11: Submarine)
-                                             3. Bit: horizontal/vertikal)(mehrere Nachrichten)<br/>
+                                             3. Bit: horizontal = 1/vertikal = 0)(mehrere Nachrichten)<br/>
     5. Zug:<br/>
         - Beschreibung: Der Spieler sendet Koordinaten, auf die er schießen will.<br/>
         - Header: 00000100 (4)<br/>
