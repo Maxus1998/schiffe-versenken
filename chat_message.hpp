@@ -106,6 +106,10 @@ public:
                     break;
             case 0b10001011: body_length(0);
                     break;
+            case 0b10001100: body_length(0);
+                    break;
+            case 0b10001101: body_length(0);
+                    break;
             case 0b11111111: body_length(0);
                     break;
             default: body_length(0);

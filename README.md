@@ -100,7 +100,15 @@ Nachrichten vom Server:<br/>
         - Beschreibung: Wird vom Server verschickt, wenn ein Client eine Liste von Spielen anfordert, aber gerade kein Spieler einen anderen Spieler sucht.<br/>
         - Header: 10001011<br/>
         - Body: leer<br/>
-    13. Error:<br/>
+    13. Player disconnected:<br/>
+        - Beschreibung: Wird vom Server verschickt, wenn während einem Spiel der Gegenspieler die Verbindung beendet.<br/>
+        - Header: 10001100<br/>
+        - Body: leer<br/>
+    14. Player reconnected:<br/>
+        - Beschreibung: Wird vom Server verschickt, wenn ein Spieler einem anderen Spieler, der gerade mitten in einem Spiel ist, beitritt.<br/>
+        - Header: 10001101<br/>
+        - Body: leer<br/>
+    15. Error:<br/>
         - Beschreibung: Falls ein Fehler auf Serverseite registriert wird, zum Beispiel wenn eine Nachricht mit ungültigem Header vom Client kommt.<br/>
         - Header: 11111111 (255)<br/>
         - Body: leer<br/>

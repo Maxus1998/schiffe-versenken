@@ -200,6 +200,10 @@ int main(int argc, char* argv[])
                     break;
           case 139: header = 0b10001011;
                     break;
+          case 140: header = 0b10001100;
+                    break;
+          case 141: header = 0b10001101;
+                    break;
           case 255: header = 0b11111111;
                     break;
       }
