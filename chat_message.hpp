@@ -65,7 +65,7 @@ public:
 
     void setBodyLength(char &header, size_t &variableLength)
     {
-        switch(header) {
+        switch(int(reinterpret_cast<const unsigned char&>(header))) {
             case 0b00000000: body_length(0);
                     break;
             case 0b00000001: body_length(0);
@@ -86,7 +86,7 @@ public:
                     break;
             case 0b10000001: body_length(16);
                     break;
-            case 0b10000010: body_length(0);
+            case 0b10000010: body_length(16);
                     break;
             case 0b10000011: body_length(0);
                     break;
@@ -103,6 +103,8 @@ public:
             case 0b10001001: body_length(0);
                     break;
             case 0b10001010: body_length(0);
+                    break;
+            case 0b10001011: body_length(0);
                     break;
             case 0b11111111: body_length(0);
                     break;

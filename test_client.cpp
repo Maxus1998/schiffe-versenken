@@ -64,12 +64,13 @@ private:
         {
           if (!ec && read_msg_.decode_header())
           {
-            std::cout << int(read_msg_.data()[0]);
+            //std::cout << int(read_msg_.data()[0]);
             if (read_msg_.body_length() > 0) {
                 do_read_body();
             } else {
-                if (read_msg_.data()[0] == - 1)
-                std::cout << "error";
+                if (read_msg_.data()[0] == - 1) {
+                    std::cout << "error";
+                }
                 do_read_header();
             }
           }
@@ -195,6 +196,8 @@ int main(int argc, char* argv[])
           case 137: header = 0b10001001;
                     break;
           case 138: header = 0b10001010;
+                    break;
+          case 139: header = 0b10001011;
                     break;
           case 255: header = 0b11111111;
                     break;

@@ -24,6 +24,7 @@ using boost::asio::ip::tcp;
 //----------------------------------------------------------------------
 
 typedef std::deque<chat_message> chat_message_queue;
+class game_room;
 
 //----------------------------------------------------------------------
 
@@ -33,6 +34,8 @@ public:
   virtual ~chat_participant() {}
   virtual void deliver(const chat_message& msg) = 0;
   std::string name_ = "";
+  std::shared_ptr<game_room> game_room_;
+  bool isInAGame_ = false;
 };
 
 typedef std::shared_ptr<chat_participant> chat_participant_ptr;
@@ -63,88 +66,10 @@ public:
     std::set<chat_participant_ptr> participants_;
     std::set<chat_participant_ptr> searchingParticipants_;
 };
+
 //----------------------------------------------------------------------
 
-class waitingRoom : public room {
-public:
-
-    bool setName(chat_participant_ptr &participant, const char name[]) {
-        if (participant -> name_.empty()) {
-            for (chat_participant_ptr x : participants_) {
-                if (x -> name_ == name) {
-                    return false;
-                }
-            }
-            participant -> name_ = name;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    bool createGame(chat_participant_ptr &participant) {
-        for (chat_participant_ptr x : searchingParticipants_) {
-            if (x -> name_ == participant -> name_) {
-                return false;
-            }
-        }
-        searchingParticipants_.insert(participant);
-        return true;
-    }
-
-    int deleteGame(chat_participant_ptr &participant) {
-        return searchingParticipants_.erase(participant);
-    }
-
-    void deliver(const chat_message& msg, chat_participant_ptr participant) override{
-        switch(int(reinterpret_cast<const unsigned char&>(msg.data()[0]))) {
-            case 0:
-                std::cout << "Create game!";
-                if (createGame(participant)) {
-                    chat_message confirm;
-                    confirm.encode_header(0b10000000);
-                    participant -> deliver(confirm);
-                } else {
-                    sendErrorMessage(participant);
-                }
-                break;
-            case 1:
-                std::cout << "Request players!";
-                break;
-            case 2:
-                std::cout << "Join player " << msg.body() << "!";
-                break;
-            case 5:
-                std::cout << "Send name " << msg.body() << "!";
-                if (setName(participant, msg.body())) {
-                    chat_message confirm;
-                    confirm.encode_header(0b10001001);
-                    participant -> deliver(confirm);
-                } else {
-                    sendErrorMessage(participant);
-                }
-                break;
-            case 6:
-                std::cout << "Delete game!";
-                if (deleteGame(participant)) {
-                    chat_message confirm;
-                    confirm.encode_header(0b10001010);
-                    participant -> deliver(confirm);
-                } else {
-                    sendErrorMessage(participant);
-                }
-                break;
-            case 127:
-                std::cout << "Error!";
-                break;
-            default:
-                sendErrorMessage(participant);
-        }
-    }
-};
-//----------------------------------------------------------------------
-
-class gameRoom : public room {
+class game_room : public room {
 public:
     void deliver (const chat_message& msg, chat_participant_ptr participant) override{
         switch(int(reinterpret_cast<const unsigned char&>(msg.data()[0]))) {
@@ -165,12 +90,151 @@ public:
 
 //----------------------------------------------------------------------
 
+class waiting_room : public room {
+public:
+
+    bool setName(chat_participant_ptr &participant, const char name[]) {
+        if (participant -> name_.empty()) {
+            for (chat_participant_ptr x : participants_) {
+                if (x -> name_ == name) {
+                    return false;
+                }
+            }
+            participant -> name_ = name;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool createGame(chat_participant_ptr participant) {
+        for (chat_participant_ptr x : searchingParticipants_) {
+            if (x -> name_ == participant -> name_) {
+                return false;
+            }
+        }
+        searchingParticipants_.insert(participant);
+        participant -> game_room_ = std::make_shared<game_room>();
+        participant -> game_room_ -> join(participant);
+        return true;
+    }
+
+    int stopSearching(chat_participant_ptr participant) {
+        return searchingParticipants_.erase(participant);
+    }
+
+    void sendPlayers(chat_participant_ptr participant) {
+        if (searchingParticipants_.empty()) {
+            chat_message confirm;
+            confirm.encode_header(0b10001011);
+            participant -> deliver(confirm);
+        } else {
+            for (chat_participant_ptr x : searchingParticipants_) {
+                std::cout << x -> name_;
+                chat_message confirm;
+                confirm.encode_header(0b10000001);
+                char body[16] = "";
+                std::memcpy(body, x -> name_.c_str(), x -> name_.length() + 1);
+                std::memcpy(confirm.body(), body, confirm.body_length());
+                participant -> deliver(confirm);
+            }
+        }
+    }
+
+    bool joinGame(const chat_participant_ptr participant, const char name[]) {
+        bool rc = false;
+        chat_participant_ptr joinedPlayer;
+        for (const chat_participant_ptr x: searchingParticipants_) {
+            if (x -> name_ == name) {
+                participant -> game_room_ = x -> game_room_;
+                participant -> game_room_ -> join(participant);
+                rc = true;
+                joinedPlayer = x;
+            }
+        }
+        if (rc) {
+            stopSearching(joinedPlayer);
+            participant -> isInAGame_ = true;
+            joinedPlayer -> isInAGame_ = true;
+        }
+        return rc;
+    }
+
+    void deliver(const chat_message& msg, chat_participant_ptr participant) override{
+        switch(int(reinterpret_cast<const unsigned char&>(msg.data()[0]))) {
+            case 0:
+                std::cout << "Create game!";
+                if (createGame(participant)) {
+                    chat_message confirm;
+                    confirm.encode_header(0b10000000);
+                    participant -> deliver(confirm);
+                } else {
+                    sendErrorMessage(participant);
+                }
+                break;
+            case 1:
+                std::cout << "Request players!";
+                sendPlayers(participant);
+                break;
+            case 2:
+                std::cout << "Join player " << msg.body() << "!";
+                if (joinGame(participant, msg.body())) {
+                    chat_message confirm;
+                    confirm.encode_header(0b10000010);
+                    chat_participant_ptr joinedPlayer;
+                    for (chat_participant_ptr x: participant -> game_room_ -> participants_) {
+                        if (x -> name_ == msg.body()) {
+                            joinedPlayer = x;
+                            break;
+                        }
+                    }
+                    char body[16] = "";
+                    
+                    std::memcpy(body, participant -> name_.c_str(), participant -> name_.length() + 1);
+                    std::memcpy(confirm.body(), body, confirm.body_length());
+                    joinedPlayer -> deliver(confirm);
+                    std::memcpy(body, joinedPlayer -> name_.c_str(), joinedPlayer -> name_.length() + 1);
+                    std::memcpy(confirm.body(), body, confirm.body_length());
+                    participant -> deliver(confirm);
+                }
+                break;
+            case 5:
+                std::cout << "Send name " << msg.body() << "!";
+                if (setName(participant, msg.body())) {
+                    chat_message confirm;
+                    confirm.encode_header(0b10001001);
+                    participant -> deliver(confirm);
+                } else {
+                    sendErrorMessage(participant);
+                }
+                break;
+            case 6:
+                std::cout << "Delete game!";
+                if (stopSearching(participant)) {
+                    chat_message confirm;
+                    confirm.encode_header(0b10001010);
+                    participant -> deliver(confirm);
+                } else {
+                    sendErrorMessage(participant);
+                }
+                break;
+            case 127:
+                std::cout << "Error!";
+                break;
+            default:
+                sendErrorMessage(participant);
+        }
+    }
+};
+
+//----------------------------------------------------------------------
+
 class chat_session
   : public chat_participant,
     public std::enable_shared_from_this<chat_session>
 {
 public:
-    chat_session(tcp::socket socket, waitingRoom& room)
+    chat_session(tcp::socket socket, waiting_room& room)
         : socket_(std::move(socket)),
         room_(room)
     {
@@ -192,8 +256,6 @@ public:
         }
     }
 
-    bool isInAGame_ = false;
-    gameRoom gameRoom_;
 private:
     void do_read_header()
     {
@@ -215,7 +277,7 @@ private:
                             case 6:
                             case 127:
                                 if (isInAGame_) {
-                                    gameRoom_.deliver(read_msg_, shared_from_this());
+                                    game_room_ -> deliver(read_msg_, shared_from_this());
                                 } else {
                                     room_.deliver(read_msg_, shared_from_this());
                                 }
@@ -230,8 +292,9 @@ private:
                 {
                     room_.leave(shared_from_this());
                     if (isInAGame_) {
-                        gameRoom_.leave(shared_from_this());
+                        game_room_ -> leave(shared_from_this());
                     }
+                    room_.stopSearching(shared_from_this());
                 }
             });
   }
@@ -246,7 +309,7 @@ private:
               if (!ec)
               {
                   if (isInAGame_) {
-                      gameRoom_.deliver(read_msg_, shared_from_this());
+                      game_room_ -> deliver(read_msg_, shared_from_this());
                   } else {
                       room_.deliver(read_msg_, shared_from_this());
                   }
@@ -256,8 +319,9 @@ private:
               {
                   room_.leave(shared_from_this());
                   if (isInAGame_) {
-                      gameRoom_.leave(shared_from_this());
+                      game_room_ -> leave(shared_from_this());
                   }
+                  room_.stopSearching(shared_from_this());
               }
           });
   }
@@ -282,14 +346,15 @@ private:
               {
                   room_.leave(shared_from_this());
                   if (isInAGame_) {
-                      gameRoom_.leave(shared_from_this());
+                      game_room_ -> leave(shared_from_this());
                   }
+                  room_.stopSearching(shared_from_this());
               }
           });
   }
 
   tcp::socket socket_;
-  waitingRoom& room_;
+  waiting_room& room_;
   chat_message read_msg_;
   chat_message_queue write_msgs_;
 };
@@ -322,7 +387,7 @@ private:
   }
 
   tcp::acceptor acceptor_;
-  waitingRoom room_;
+  waiting_room room_;
 };
 
 //----------------------------------------------------------------------
