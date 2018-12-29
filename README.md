@@ -92,7 +92,11 @@ Nachrichten vom Server:<br/>
         - Beschreibung: Das Spiel eines Clients, der bis eben noch einen anderen Spieler gesucht hat, wurde erfolgreich gelöscht.<br/>
         - Header: 10001010 (138)<br/>
         - Body: leer<br/>
-    12. Error:<br/>
+    12. No games available:<br/>
+        - Beschreibung: Wird vom Server verschickt, wenn ein Client eine Liste von Spielen anfordert, aber gerade kein Spieler einen anderen Spieler sucht.<br/>
+        - Header: 10001011<br/>
+        - Body: leer<br/>
+    13. Error:<br/>
         - Beschreibung: Falls ein Fehler auf Serverseite registriert wird, zum Beispiel wenn eine Nachricht mit ungültigem Header vom Client kommt.<br/>
         - Header: 11111111 (255)<br/>
         - Body: leer<br/>
