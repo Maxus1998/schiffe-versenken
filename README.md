@@ -108,7 +108,7 @@ Nachrichten vom Server:<br/>
     14. Player reconnected:<br/>
         - Beschreibung: Wird vom Server verschickt, wenn ein Spieler einem anderen Spieler, der gerade mitten in einem Spiel ist, beitritt.<br/>
         - Header: 10001101<br/>
-        - Body: leer<br/>
+        - Body: Chararray<br/>
     15. Error:<br/>
         - Beschreibung: Falls ein Fehler auf Serverseite registriert wird, zum Beispiel wenn eine Nachricht mit ungültigem Header vom Client kommt.<br/>
         - Header: 11111111 (255)<br/>
