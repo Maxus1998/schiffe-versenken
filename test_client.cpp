@@ -56,15 +56,39 @@ private:
         });
   }
 
+  void do_read_oneMoreByte() {
+      {
+          boost::asio::async_read(socket_,
+              boost::asio::buffer(read_msg_.body(), 1),
+              [this](boost::system::error_code ec, std::size_t /*length*/)
+              {
+                  if (!ec)
+                  {
+                      read_msg_.decode_header(int(reinterpret_cast<const unsigned char&>(read_msg_.body()[0])) * 2);
+                      std::cout << "Number of Moves: " << int(reinterpret_cast<const unsigned char&>(read_msg_.body()[0]));
+                      std::cout << std::endl;
+                      do_read_body(1);
+                  }
+                  else
+                  {
+                      socket_.close();
+                  }
+              });
+      }
+  }
+
   void do_read_header()
   {
     boost::asio::async_read(socket_,
         boost::asio::buffer(read_msg_.data(), chat_message::header_length),
         [this](boost::system::error_code ec, std::size_t /*length*/)
         {
-          if (!ec && read_msg_.decode_header())
+          std::cout << int(read_msg_.data()[0]) << std::endl;
+          if (int(reinterpret_cast<const unsigned char&>(read_msg_.data()[0])) == 0b10001000) {
+              do_read_oneMoreByte();
+          }
+          else if (!ec && read_msg_.decode_header())
           {
-            std::cout << int(read_msg_.data()[0]) << std::endl;
             if (read_msg_.body_length() > 0) {
                 do_read_body();
             } else {
@@ -81,17 +105,30 @@ private:
         });
   }
 
-  void do_read_body()
+  void do_read_body(int x = 0)
   {
     boost::asio::async_read(socket_,
-        boost::asio::buffer(read_msg_.body(), read_msg_.body_length()),
+        boost::asio::buffer(read_msg_.body() + x, read_msg_.body_length() - x),
         [this](boost::system::error_code ec, std::size_t /*length*/)
         {
           if (!ec)
           {
-            //std::cout.write(read_msg_.body(), read_msg_.body_length());
-            std::cout << int(read_msg_.body()[0]) << ((read_msg_.body()[1] >> 0 ) & 1) << ((read_msg_.body()[1] >> 1 ) & 1) << ((read_msg_.body()[1] >> 2 ) & 1);
-            std::cout << "\n";
+            if (int(reinterpret_cast<const unsigned char&>(read_msg_.data()[0]) == 0b10001000)) {
+                std::cout << "Player: ";
+                std::cout << int(read_msg_.body()[1]) << std::endl;
+                std::cout << "Ships:" << std::endl;
+                for (int i = 2; i < 22; i = i + 2) {
+                    std::cout << int(read_msg_.body()[i]) << ((read_msg_.body()[i + 1] >>  2 ) & 1) << ((read_msg_.body()[i + 1] >>  1 ) & 1) << ((read_msg_.body()[i + 1] >>  0 ) & 1) << std::endl;
+                }
+                std::cout << "Shots:" << std::endl;
+                for (int i = 22; i < 22 + int(reinterpret_cast<const unsigned char&>(read_msg_.body()[00])) * 2; i = i + 2) {
+                    std::cout << int(read_msg_.body()[i]) << ((read_msg_.body()[i + 1] >> 0 ) & 1) << ((read_msg_.body()[i + 1] >> 1 ) & 1) << ((read_msg_.body()[i + 1] >> 2 ) & 1) << std::endl;
+                }
+            }else {
+                //std::cout.write(read_msg_.body(), read_msg_.body_length());
+                std::cout << int(read_msg_.body()[0]) << ((read_msg_.body()[1] >> 0 ) & 1) << ((read_msg_.body()[1] >> 1 ) & 1) << ((read_msg_.body()[1] >> 2 ) & 1);
+                std::cout << "\n";
+            }
             do_read_header();
           }
           else
@@ -219,7 +256,22 @@ int main(int argc, char* argv[])
               std::cin >> input2;
               line[0] = input2;
               if (input1 == 3) {
-                  std::cout << "choose ship" << std::endl;
+                  if (input2 == 0) {
+                      x |= 0 << 0;
+                      x |= 0 << 1; //battleship
+                  } else if (input2 >= 10 && input2 < 30) {
+                      x |= 1 << 0;
+                      x |= 0 << 1; //cruiser
+                  } else if (input2 >= 30 && input2 < 60) {
+                      x |= 0 << 0;
+                      x |= 1 << 1; //destroyer
+                  } else {
+                      x |= 1 << 0;
+                      x |= 1 << 1; //submarine
+                  }
+                  x |= 1 << 2; //horizontal
+                  line[1] = x;
+                  /*std::cout << "choose ship" << std::endl;
                   std::cin >> input2;
                   switch (input2) {
                       case 0: x |= 0 << 0;
@@ -241,13 +293,13 @@ int main(int argc, char* argv[])
                   } else {
                       x |= 0 << 2; //vertical
                   }
-                  line[1] = x;
+                  line[1] = x;*/
               }
           }
           std::memcpy(msg.body(), line, msg.body_length());
       }
       c -> write(msg);
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
     c -> close();
     t.join();

@@ -13,10 +13,10 @@ typedef struct coordinates{
 }coordinates_t;
 
 typedef struct player{
-    int battleship = 0;
-    int cruiser = 0;
-    int destroyer = 0;
-    int submarine = 1;
+    int battleship = 1;
+    int cruiser = 2;
+    int destroyer = 3;
+    int submarine = 4;
     std::vector<std::vector<coordinates>> ships;
     char shots_taken[100];
 }player_t;
@@ -24,13 +24,15 @@ typedef struct player{
 class Schiffe_versenken {
     player_t player1;
     player_t player2;
-    bool onePlayerReady = false;
     std::mutex mutex;
     bool player1sTurn = true;
+    bool player1Ready = false;
+    bool player2Ready = false;
 public:
     void initialize();
     int setShip(int space, bool horizontal, bool player, int shiptype);
     int makeMove(int space, bool player);
+    void deleteShips(bool player);
 };
 
 

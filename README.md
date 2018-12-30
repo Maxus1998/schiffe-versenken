@@ -54,9 +54,9 @@ Nachrichten vom Server:<br/>
     3. Game joined:<br/>
         - Beschreibung: Gibt dem suchenden Client Bescheid, dass ein Spieler seinem Spiel beigetreten ist und sagt
           dem Spieler, der einem Spiel beitreten will, dass er erfolgreich beigetreten ist.(Er sendet beiden Spielern
-          den Namen des jeweils anderen Spielers)<br/>
+          den Namen des jeweils anderen Spielers) Außerdem sendet er, welcher Spieler ein Client ist zum identifizieren.<br/>
         - Header: 10000010 (130)<br/>
-        - Body: Chararray<br/>
+        - Body: Chararray + 1 Byte(welcher Spieler, 1 oder 0)<br/>
     4. Schiff gesetzt:<br/>
         - Beschreibung: Gibt dem Client, der gerade ein Schiff gesetzt hat, Bescheid, dass das Schiff erfolgreich gesetzt wurde.<br/>
         - Header: 10000011 (131)<br/>
@@ -86,9 +86,9 @@ Nachrichten vom Server:<br/>
         - Beschreibung: Falls ein Spieler ein Spiel verlässt, kann ein anderer Spieler dem laufenden Spiel beitreten. Dieser erhält dann eine Nachricht mit den Koordinaten seiner Schiffe
           und alle bisher vollzogenen Spielzüge.<br/>
         - Header: 10001000 (136)<br/>
-        - Body: 1 Byte(Anzahl an Spielzügen, Anzahl an Spielzügen * 2 = Anzahl an Byte, die man zusätzlich zu den gesetzten Schiffen noch lesen muss)
+        - Body: 1 Byte(Anzahl an Spielzügen, Anzahl an Spielzügen = Anzahl an Byte, die man zusätzlich zu den gesetzten Schiffen noch lesen muss)
           + 1 Byte(Welcher Spieler, 1 oder 0) + 20 Byte (gesetzte Schiffe, für nähere Information
-          siehe Set Ships bei Client) + Anzahl an Spielzügen * 2 Byte(Spielzüge)<br/>
+          siehe Set Ships bei Client) + Anzahl an Spielzügen Byte(Spielzüge)<br/>
     10. Name set:<br/>
         - Beschreibung: Bestätigung an den Client, dass der Name erfolgreich gesetzt wurde.<br/>
         - Header: 10001001 (137)<br/>

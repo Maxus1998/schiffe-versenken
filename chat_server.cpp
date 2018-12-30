@@ -76,8 +76,20 @@ public:
     Schiffe_versenken game;
     bool shipsSet = false;
     char player1Ships[20];
+    char* shipPointer1 = player1Ships;
     char player2Ships[20];
+    char* shipPointer2 = player2Ships;
+    size_t numberOfMoves = 0;
     char moves[400];
+
+    void disconnectPlayer(chat_participant_ptr participant) {
+        chat_message confirm;
+        confirm.encode_header(0b10001100);
+        participant -> deliver(confirm);
+        if (!shipsSet) {
+            game.deleteShips(!participant -> player);
+        }
+    }
 
     int setShip(chat_participant_ptr participant, const char space, const char shipInfo) {
         int shipType;
@@ -107,10 +119,12 @@ public:
         return game.setShip(int(space), horizontal, participant -> player, shipType);
     }
 
-    void sendSetShips(chat_participant_ptr &participant, int rc) {
+    bool sendSetShips(chat_participant_ptr &participant, int rc) {
+        bool valid = true;
         chat_message confirm;
         switch(rc) {
             case 0: sendErrorMessage(participant);
+                    valid = false;
                     break;
             case 1: confirm.encode_header(0b10000011);
                     participant -> deliver(confirm);
@@ -123,20 +137,22 @@ public:
                         x |= 0 << 0;
                     }
                     std::memcpy(confirm.body(), &x, confirm.body_length());
-                    for (chat_participant_ptr x : participant -> game_room_ -> participants_) {
-                        x->deliver(confirm);
+                    for (chat_participant_ptr y : participant -> game_room_ -> participants_) {
+                        y->deliver(confirm);
                     }
                     break;
             case 3: confirm.encode_header(0b10000101);
-                    for (chat_participant_ptr x : participant -> game_room_ -> participants_) {
-                        x->deliver(confirm);
+                    for (chat_participant_ptr y : participant -> game_room_ -> participants_) {
+                        y->deliver(confirm);
                     }
                     shipsSet = true;
                     break;
         }
+        return valid;
     }
 
-    void makeMoveAndSend(chat_participant_ptr participant, char space) {
+    bool makeMoveAndSend(chat_participant_ptr participant, char space) {
+        bool valid = false;
         int rc = game.makeMove(space, participant -> player);
         chat_message confirm;
         bool hit;
@@ -164,6 +180,7 @@ public:
                     break;
         }
         if (rc != 0) {
+            valid = true;
             if (!gameOver) {
                 confirm.encode_header(0b10000110);
             } else {
@@ -188,17 +205,31 @@ public:
             }
             body[1] = x;
             std::memcpy(confirm.body(), body, confirm.body_length());
+            participant -> game_room_ -> moves[participant -> game_room_ -> numberOfMoves * 2] = body[0];
+            participant -> game_room_ -> moves[(participant -> game_room_ -> numberOfMoves * 2) + 1] = body[1];
+            participant -> game_room_ -> numberOfMoves = participant -> game_room_ -> numberOfMoves + 1;
             for (chat_participant_ptr x : participant -> game_room_ -> participants_) {
                 x -> deliver(confirm);
             }
         }
+        return valid;
     }
 
     void deliver (const chat_message& msg, chat_participant_ptr participant) override{
         switch(int(reinterpret_cast<const unsigned char&>(msg.data()[0]))) {
             case 3:
                 std::cout << "Set Ship";
-                sendSetShips(participant, setShip(participant, msg.body()[0], msg.body()[1]));
+                if (sendSetShips(participant, setShip(participant, msg.body()[0], msg.body()[1]))) {
+                    if (participant -> player) {
+                        *(participant -> game_room_ -> shipPointer1) = msg.body()[0];
+                        *(participant -> game_room_ -> shipPointer1 + 1) = msg.body()[1];
+                        participant -> game_room_ -> shipPointer1 = participant -> game_room_ -> shipPointer1 + 2;
+                    } else {
+                        *(participant -> game_room_ -> shipPointer2) = msg.body()[0];
+                        *(participant -> game_room_ -> shipPointer2 + 1) = msg.body()[1];
+                        participant -> game_room_ -> shipPointer2 = participant -> game_room_ -> shipPointer2 + 2;
+                    }
+                }
                 break;
             case 4:
                 std::cout << "Shoot at " << int(msg.body()[0]) << "!";
@@ -271,7 +302,7 @@ public:
         }
     }
 
-    bool joinGame(const chat_participant_ptr participant, const char name[]) {
+    void joinGame(const chat_participant_ptr participant, const char name[]) {
         bool rc = false;
         chat_participant_ptr joinedPlayer;
         for (const chat_participant_ptr x: searchingParticipants_) {
@@ -285,14 +316,79 @@ public:
         if (rc) {
             stopSearching(joinedPlayer);
             if (!joinedPlayer -> isInAGame_) {
-                participant->isInAGame_ = true;
-                joinedPlayer->isInAGame_ = true;
-                participant->player = false;
+                participant -> isInAGame_ = true;
+                joinedPlayer -> isInAGame_ = true;
+                participant -> player = false;
+                chat_message confirm;
+                confirm.encode_header(0b10000010);
+                char body1[17] = "";
+                char player;
+                if (joinedPlayer -> player) {
+                    player = 1;
+                } else {
+                    player = 0;
+                }
+                std::memcpy(body1, participant -> name_.c_str(), participant -> name_.length() + 1);
+                body1[16] = player;
+                std::memcpy(confirm.body(), body1, confirm.body_length());
+                joinedPlayer -> deliver(confirm);
+                char body2[17];
+                if (participant -> player) {
+                    player = 1;
+                } else {
+                    player = 0;
+                }
+                std::memcpy(body2, joinedPlayer -> name_.c_str(), joinedPlayer -> name_.length() + 1);
+                body2[16] = player;
+                std::memcpy(confirm.body(), body2, confirm.body_length());
+                participant -> deliver(confirm);
             } else {
-
+                participant -> isInAGame_ = true;
+                participant -> player = !joinedPlayer -> player;
+                chat_message reconnect;
+                reconnect.encode_header(0b10001101);
+                char body1[16] = "";
+                std::memcpy(body1, participant -> name_.c_str(), participant -> name_.size() + 1);
+                std::memcpy(reconnect.body(), body1, reconnect.body_length());
+                joinedPlayer -> deliver(reconnect);
+                if (!joinedPlayer -> game_room_ -> shipsSet) {
+                    chat_message confirm;
+                    confirm.encode_header(0b10000010);
+                    char body2[17] = "";
+                    char player;
+                    if (participant -> player) {
+                        player = 1;
+                    } else {
+                        player = 0;
+                    }
+                    std::memcpy(body2, joinedPlayer -> name_.c_str(), joinedPlayer -> name_.length() + 1);
+                    body2[16] = player;
+                    std::memcpy(confirm.body(), body2, confirm.body_length());
+                    participant -> deliver(confirm);
+                } else {
+                    chat_message initialize;
+                    initialize.encode_header(0b10001000, participant -> game_room_ -> numberOfMoves * 2);
+                    char body[421] = "";
+                    char moves = participant -> game_room_ -> numberOfMoves;
+                    std::cout << int(moves);
+                    body[0] = moves;
+                    char* ships;
+                    if (participant -> player) {
+                        body[1] = 1;
+                        ships = participant -> game_room_ -> player1Ships;
+                    } else {
+                        body[1] = 0;
+                        ships = participant -> game_room_ -> player2Ships;
+                    }
+                    std::memcpy(body + 2, ships, 20);
+                    std::memcpy(body + 22, participant -> game_room_ -> moves, participant -> game_room_ -> numberOfMoves * 2);
+                    std::memcpy(initialize.body(), body, initialize.body_length());
+                    participant -> deliver(initialize);
+                }
             }
+        } else {
+            sendErrorMessage(participant);
         }
-        return rc;
     }
 
     void deliver(const chat_message& msg, chat_participant_ptr participant) override{
@@ -317,26 +413,7 @@ public:
                 break;
             case 2:
                 std::cout << "Join player " << msg.body() << "!";
-                if (joinGame(participant, msg.body())) {
-                    chat_message confirm;
-                    confirm.encode_header(0b10000010);
-                    chat_participant_ptr joinedPlayer;
-                    for (chat_participant_ptr x: participant -> game_room_ -> participants_) {
-                        if (x -> name_ == msg.body()) {
-                            joinedPlayer = x;
-                            break;
-                        }
-                    }
-                    char body[16] = "";
-                    std::memcpy(body, participant -> name_.c_str(), participant -> name_.length() + 1);
-                    std::memcpy(confirm.body(), body, confirm.body_length());
-                    joinedPlayer -> deliver(confirm);
-                    std::memcpy(body, joinedPlayer -> name_.c_str(), joinedPlayer -> name_.length() + 1);
-                    std::memcpy(confirm.body(), body, confirm.body_length());
-                    participant -> deliver(confirm);
-                } else {
-                    sendErrorMessage(participant);
-                }
+                joinGame(participant, msg.body());
                 break;
             case 5:
                 std::cout << "Send name " << msg.body() << "!";
@@ -433,6 +510,10 @@ private:
                     room_.leave(shared_from_this());
                     if (isInAGame_) {
                         game_room_ -> leave(shared_from_this());
+                        if (!game_room_ -> participants_.empty()) {
+                            game_room_->disconnectPlayer(*game_room_->participants_.begin());
+                            room_.searchingParticipants_.insert(*game_room_ -> participants_.begin());
+                        }
                     }
                     room_.stopSearching(shared_from_this());
                 }
@@ -460,6 +541,10 @@ private:
                   room_.leave(shared_from_this());
                   if (isInAGame_) {
                       game_room_ -> leave(shared_from_this());
+                      if (!game_room_ -> participants_.empty()) {
+                          game_room_->disconnectPlayer(*game_room_->participants_.begin());
+                          room_.searchingParticipants_.insert(*game_room_ -> participants_.begin());
+                      }
                   }
                   room_.stopSearching(shared_from_this());
               }
@@ -487,6 +572,10 @@ private:
                   room_.leave(shared_from_this());
                   if (isInAGame_) {
                       game_room_ -> leave(shared_from_this());
+                      if (!game_room_ -> participants_.empty()) {
+                          game_room_->disconnectPlayer(*game_room_->participants_.begin());
+                          room_.searchingParticipants_.insert(*game_room_ -> participants_.begin());
+                      }
                   }
                   room_.stopSearching(shared_from_this());
               }

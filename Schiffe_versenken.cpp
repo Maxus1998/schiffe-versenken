@@ -87,11 +87,15 @@ int Schiffe_versenken::setShip(int space, bool horizontal, bool player, int ship
         }
         if (currentPlayer -> battleship == 0 && currentPlayer -> cruiser == 0 && currentPlayer -> destroyer == 0 && currentPlayer -> submarine == 0) {
             mutex.lock();
-            if (!onePlayerReady) {
-                onePlayerReady = true;
-                rc = 2;
+            if (player) {
+                player1Ready = true;
             } else {
+                player2Ready = true;
+            }
+            if (player1Ready && player2Ready) {
                 rc = 3;
+            } else {
+                rc = 2;
             }
             mutex.unlock();
         } else {
@@ -155,4 +159,24 @@ int Schiffe_versenken::makeMove(int space, bool player) {
         currentPlayer -> shots_taken[space] = 1;
     }
     return rc;
+}
+
+void Schiffe_versenken::deleteShips(bool player) {
+    player_t* currentPlayer;
+    bool* ready;
+    if (player) {
+        currentPlayer = &player1;
+        ready = &player1Ready;
+    } else {
+        currentPlayer = &player2;
+        ready = &player2Ready;
+    }
+    currentPlayer -> ships.clear();
+    currentPlayer -> battleship = 1;
+    currentPlayer -> cruiser = 2;
+    currentPlayer -> destroyer = 3;
+    currentPlayer -> submarine = 4;
+    if (*ready) {
+        *ready = false;
+    }
 }
