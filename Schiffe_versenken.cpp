@@ -19,6 +19,14 @@
  * 4: cruiser
  * 5: battleship
  */
+
+void Schiffe_versenken::initialize() {
+    for (int i = 0; i < 100; i++) {
+        player1.shots_taken[i] = 0;
+        player2.shots_taken[i] = 0;
+    }
+}
+
 int Schiffe_versenken::setShip(int space, bool horizontal, bool player, int shipType) {
     player_t* currentPlayer;
     if (player) {
@@ -51,7 +59,7 @@ int Schiffe_versenken::setShip(int space, bool horizontal, bool player, int ship
             }
         }
     }
-    if ((x + shipType - 1 > 9 && horizontal) || (y + shipType - 1 > 9 && !horizontal) || shipCount == 0 || !valid) {
+    if ((x + shipType - 1 > 9 && horizontal) || (y + shipType - 1 > 9 && !horizontal) || shipCount == 0 || !valid || space < 0 || space > 99) {
         rc = 0;
     } else {
         std::vector<coordinates_t> ship;
@@ -90,11 +98,61 @@ int Schiffe_versenken::setShip(int space, bool horizontal, bool player, int ship
             rc = 1;
         }
     }
-    for (int i = 0; i < currentPlayer -> ships.size(); i++) {
-        for (int j = 0; j < currentPlayer -> ships[i].size(); j++) {
-            std::cout << currentPlayer -> ships[i][j].x << " " << currentPlayer -> ships[i][j].y << std::endl;
+    return rc;
+}
+
+/*
+ * return value:
+ * 0: Move is not valid
+ * 1: No hit
+ * 2: Ship is hit
+ * 3: ship has been sunk
+ * 4: ship has been sunk and game is over
+ */
+int Schiffe_versenken::makeMove(int space, bool player) {
+    int rc;
+    int x = space % 10;
+    int y = space / 10;
+
+    player_t* currentPlayer;
+    if (player) {
+        currentPlayer = &player1;
+    } else {
+        currentPlayer = &player2;
+    }
+    if (player != player1sTurn || space < 0 || space > 99 || currentPlayer -> shots_taken[space] == 1) {
+        rc = 0;
+    } else {
+        bool hit = false;
+        int shipIndex;
+        int shipPart;
+        for (int i = 0; i < currentPlayer -> ships.size(); i++) {
+            for (int j = 0; j < currentPlayer -> ships[i].size(); j++) {
+                if (currentPlayer -> ships[i][j].x == x && currentPlayer -> ships[i][j].y == y) {
+                    hit = true;
+                    shipIndex = i;
+                    shipPart = j;
+                    break;
+                }
+            }
         }
-        std::cout << std::endl;
+        if (hit) {
+            currentPlayer -> ships[shipIndex].erase(currentPlayer -> ships[shipIndex].begin() + shipPart);
+            if (currentPlayer -> ships[shipIndex].empty()) {
+                currentPlayer -> ships.erase(currentPlayer -> ships.begin() + shipIndex);
+                if (currentPlayer -> ships.empty()) {
+                    rc = 4;
+                } else {
+                    rc = 3;
+                }
+            } else {
+                rc = 2;
+            }
+        } else {
+            rc = 1;
+        }
+        player1sTurn = !player1sTurn;
+        currentPlayer -> shots_taken[space] = 1;
     }
     return rc;
 }

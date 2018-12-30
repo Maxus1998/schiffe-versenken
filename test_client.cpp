@@ -89,8 +89,8 @@ private:
         {
           if (!ec)
           {
-            std::cout.write(read_msg_.body(), read_msg_.body_length());
-            //std::cout << ((read_msg_.body()[0] >> 0 ) & 1);
+            //std::cout.write(read_msg_.body(), read_msg_.body_length());
+            std::cout << int(read_msg_.body()[0]) << ((read_msg_.body()[1] >> 0 ) & 1) << ((read_msg_.body()[1] >> 1 ) & 1) << ((read_msg_.body()[1] >> 2 ) & 1);
             std::cout << "\n";
             do_read_header();
           }

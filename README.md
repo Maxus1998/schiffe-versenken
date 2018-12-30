@@ -86,7 +86,8 @@ Nachrichten vom Server:<br/>
         - Beschreibung: Falls ein Spieler ein Spiel verlässt, kann ein anderer Spieler dem laufenden Spiel beitreten. Dieser erhält dann eine Nachricht mit den Koordinaten seiner Schiffe
           und alle bisher vollzogenen Spielzüge.<br/>
         - Header: 10001000 (136)<br/>
-        - Body: 1 Byte(Anzahl an Spielzügen, Anzahl an Spielzügen * 2 = Anzahl an Byte, die man zusätzlich zu den gesetzten Schiffen noch lesen muss) + 20 Byte (gesetzte Schiffe, für nähere Information
+        - Body: 1 Byte(Anzahl an Spielzügen, Anzahl an Spielzügen * 2 = Anzahl an Byte, die man zusätzlich zu den gesetzten Schiffen noch lesen muss)
+          + 1 Byte(Welcher Spieler, 1 oder 0) + 20 Byte (gesetzte Schiffe, für nähere Information
           siehe Set Ships bei Client) + Anzahl an Spielzügen * 2 Byte(Spielzüge)<br/>
     10. Name set:<br/>
         - Beschreibung: Bestätigung an den Client, dass der Name erfolgreich gesetzt wurde.<br/>

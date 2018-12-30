@@ -74,6 +74,10 @@ public:
 class game_room : public room {
 public:
     Schiffe_versenken game;
+    bool shipsSet = false;
+    char player1Ships[20];
+    char player2Ships[20];
+    char moves[400];
 
     int setShip(chat_participant_ptr participant, const char space, const char shipInfo) {
         int shipType;
@@ -127,7 +131,66 @@ public:
                     for (chat_participant_ptr x : participant -> game_room_ -> participants_) {
                         x->deliver(confirm);
                     }
+                    shipsSet = true;
                     break;
+        }
+    }
+
+    void makeMoveAndSend(chat_participant_ptr participant, char space) {
+        int rc = game.makeMove(space, participant -> player);
+        chat_message confirm;
+        bool hit;
+        bool sunk;
+        bool gameOver;
+        char body[2];
+        switch(rc) {
+            case 0: sendErrorMessage(participant);
+                    break;
+            case 1: hit = false;
+                    sunk = false;
+                    gameOver = false;
+                    break;
+            case 2: hit = true;
+                    sunk = false;
+                    gameOver = false;
+                    break;
+            case 3: hit = true;
+                    sunk = true;
+                    gameOver = false;
+                    break;
+            case 4: hit = true;
+                    sunk = true;
+                    gameOver = true;
+                    break;
+        }
+        if (rc != 0) {
+            if (!gameOver) {
+                confirm.encode_header(0b10000110);
+            } else {
+                confirm.encode_header(0b10000111);
+            }
+            body[0] = space;
+            char x = 0;
+            if (participant->player) {
+                x |= 1 << 0;
+            } else {
+                x |= 0 << 0;
+            }
+            if (hit) {
+                x |= 1 << 1;
+            } else {
+                x |= 0 << 1;
+            }
+            if (sunk) {
+                x |= 1 << 2;
+            } else {
+                x |= 0 << 2;
+            }
+            body[1] = x;
+            std::memcpy(confirm.body(), body, confirm.body_length());
+            for (chat_participant_ptr x : participant -> game_room_ -> participants_) {
+                x -> deliver(confirm);
+            }
         }
     }
 
@@ -139,6 +202,7 @@ public:
                 break;
             case 4:
                 std::cout << "Shoot at " << int(msg.body()[0]) << "!";
+                makeMoveAndSend(participant, msg.body()[0]);
                 break;
             case 127:
                 std::cout << "Error!";
@@ -169,6 +233,9 @@ public:
     }
 
     bool createGame(chat_participant_ptr participant) {
+        if (participant -> name_.empty()) {
+            return false;
+        }
         for (chat_participant_ptr x : searchingParticipants_) {
             if (x -> name_ == participant -> name_) {
                 return false;
@@ -177,6 +244,7 @@ public:
         searchingParticipants_.insert(participant);
         participant -> game_room_ = std::make_shared<game_room>();
         participant -> game_room_ -> join(participant);
+        participant -> game_room_ -> game.initialize();
         participant -> player = true;
         return true;
     }
@@ -207,7 +275,7 @@ public:
         bool rc = false;
         chat_participant_ptr joinedPlayer;
         for (const chat_participant_ptr x: searchingParticipants_) {
-            if (x -> name_ == name) {
+            if (x -> name_ == name && participant -> name_ != name && !participant -> name_.empty()) {
                 participant -> game_room_ = x -> game_room_;
                 participant -> game_room_ -> join(participant);
                 rc = true;
@@ -216,9 +284,13 @@ public:
         }
         if (rc) {
             stopSearching(joinedPlayer);
-            participant -> isInAGame_ = true;
-            joinedPlayer -> isInAGame_ = true;
-            participant -> player = false;
+            if (!joinedPlayer -> isInAGame_) {
+                participant->isInAGame_ = true;
+                joinedPlayer->isInAGame_ = true;
+                participant->player = false;
+            } else {
+
+            }
         }
         return rc;
     }
@@ -237,7 +309,11 @@ public:
                 break;
             case 1:
                 std::cout << "Request players!";
-                sendPlayers(participant);
+                if (!participant -> name_.empty()) {
+                    sendPlayers(participant);
+                } else {
+                    sendErrorMessage(participant);
+                }
                 break;
             case 2:
                 std::cout << "Join player " << msg.body() << "!";
@@ -252,13 +328,14 @@ public:
                         }
                     }
                     char body[16] = "";
-
                     std::memcpy(body, participant -> name_.c_str(), participant -> name_.length() + 1);
                     std::memcpy(confirm.body(), body, confirm.body_length());
                     joinedPlayer -> deliver(confirm);
                     std::memcpy(body, joinedPlayer -> name_.c_str(), joinedPlayer -> name_.length() + 1);
                     std::memcpy(confirm.body(), body, confirm.body_length());
                     participant -> deliver(confirm);
+                } else {
+                    sendErrorMessage(participant);
                 }
                 break;
             case 5:
