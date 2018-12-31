@@ -208,8 +208,18 @@ public:
             participant -> game_room_ -> moves[participant -> game_room_ -> numberOfMoves * 2] = body[0];
             participant -> game_room_ -> moves[(participant -> game_room_ -> numberOfMoves * 2) + 1] = body[1];
             participant -> game_room_ -> numberOfMoves = participant -> game_room_ -> numberOfMoves + 1;
+            chat_participant_ptr otherPlayer;
             for (chat_participant_ptr x : participant -> game_room_ -> participants_) {
                 x -> deliver(confirm);
+                if (x -> name_ != participant -> name_) {
+                    otherPlayer = x;
+                }
+            }
+            if (gameOver) {
+                leave(participant);
+                participant->isInAGame_ = false;
+                leave(otherPlayer);
+                otherPlayer->isInAGame_ = false;
             }
         }
         return valid;
