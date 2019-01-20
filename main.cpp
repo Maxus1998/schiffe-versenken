@@ -93,6 +93,19 @@ public:
                 shipLength = 5;
                 break;
         }
+        for (int i = 0; i < shipLength - 1; i++) {
+            if (direction == 0) {
+                if (ships[rowNumber + i][column] != 0) {
+                    std::cout << "Another ship already occupies at least one of the spaces" << std::endl;
+                    return false;
+                }
+            } else {
+                if (ships[rowNumber][column + i]) {
+                    std::cout << "Another ship already occupies at least one of the spaces" << std::endl;
+                    return false;
+                }
+            }
+        }
         if(direction == 0)      //vertikal
         {
             if(shipLength > 10-rowNumber)
@@ -836,7 +849,7 @@ void shoot(chat_client *serverConnection, session *gameSession)
             {
                 gameSession->setShotAt(pickedRow, pickedColumn, 2);
                 displayBoards(gameSession);
-                std::cout << "You have destroyed all ships of your opponen. This means you have won!" << std::endl;
+                std::cout << "You have destroyed all ships of your opponent. This means you have won!" << std::endl;
                 exit(0);
             }
             shotSuccessful = gameSession->setShotAt(pickedRow, pickedColumn, hit);
