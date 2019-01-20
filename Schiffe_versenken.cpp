@@ -119,10 +119,13 @@ int Schiffe_versenken::makeMove(int space, bool player) {
     int y = space / 10;
 
     player_t* currentPlayer;
+    player_t* enemy;
     if (player) {
         currentPlayer = &player1;
+        enemy = &player2;
     } else {
         currentPlayer = &player2;
+        enemy = &player1;
     }
     if (player != player1sTurn || space < 0 || space > 99 || currentPlayer -> shots_taken[space] == 1) {
         rc = 0;
@@ -130,9 +133,9 @@ int Schiffe_versenken::makeMove(int space, bool player) {
         bool hit = false;
         int shipIndex;
         int shipPart;
-        for (int i = 0; i < currentPlayer -> ships.size(); i++) {
-            for (int j = 0; j < currentPlayer -> ships[i].size(); j++) {
-                if (currentPlayer -> ships[i][j].x == x && currentPlayer -> ships[i][j].y == y) {
+        for (int i = 0; i < enemy -> ships.size(); i++) {
+            for (int j = 0; j < enemy -> ships[i].size(); j++) {
+                if (enemy -> ships[i][j].x == x && enemy -> ships[i][j].y == y) {
                     hit = true;
                     shipIndex = i;
                     shipPart = j;
@@ -141,10 +144,10 @@ int Schiffe_versenken::makeMove(int space, bool player) {
             }
         }
         if (hit) {
-            currentPlayer -> ships[shipIndex].erase(currentPlayer -> ships[shipIndex].begin() + shipPart);
-            if (currentPlayer -> ships[shipIndex].empty()) {
-                currentPlayer -> ships.erase(currentPlayer -> ships.begin() + shipIndex);
-                if (currentPlayer -> ships.empty()) {
+            enemy -> ships[shipIndex].erase(enemy -> ships[shipIndex].begin() + shipPart);
+            if (enemy -> ships[shipIndex].empty()) {
+                enemy -> ships.erase(enemy -> ships.begin() + shipIndex);
+                if (enemy -> ships.empty()) {
                     rc = 4;
                 } else {
                     rc = 3;

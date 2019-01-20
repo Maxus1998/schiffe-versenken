@@ -186,16 +186,19 @@ public:
             body[0] = space;
             char x = 0;
             if (participant->player) {
+                std::cout << "player";
                 x |= 1 << 0;
             } else {
                 x |= 0 << 0;
             }
             if (hit) {
+                std::cout << "hit";
                 x |= 1 << 1;
             } else {
                 x |= 0 << 1;
             }
             if (sunk) {
+                std::cout << "sunk";
                 x |= 1 << 2;
             } else {
                 x |= 0 << 2;
