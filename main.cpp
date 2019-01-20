@@ -962,10 +962,10 @@ int main(int argc, char* argv[])
                     }
                     else if (receivedType == 135)
                     {
+                        displayBoards(gameSession);
                         std::cout
                                 << "You opponent has destroyed all your ships, the game is over now and and you have lost"
                                 << std::endl;
-                        displayBoards(gameSession);
                         exit(0);
                     }
                 }
