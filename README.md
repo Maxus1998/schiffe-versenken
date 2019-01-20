@@ -113,3 +113,9 @@ Nachrichten vom Server:<br/>
         - Beschreibung: Falls ein Fehler auf Serverseite registriert wird, zum Beispiel wenn eine Nachricht mit ungültigem Header vom Client kommt.<br/>
         - Header: 11111111 (255)<br/>
         - Body: leer<br/>
+        
+        
+        
+        
+Client: Max M. Müller (8402231)
+Server: Julian Zepf
