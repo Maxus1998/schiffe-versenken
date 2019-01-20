@@ -211,7 +211,7 @@ public:
 
         column = position % 10;
         row = position / 10;
-        std::cout << row << "|" << column << std::endl;
+        std::cout << "Shot at "<< char(row+65) << "|" << column << std::endl;
         if(getShipAt(row,column) != ' ')
         {
             std::cout << getShipAt(row,column) << " hit" << std::endl;
@@ -697,7 +697,6 @@ int sendShipToServer(client *serverConnection, char row, int column, int directi
         default:
             successful = 0;
     }
-    std::cout << "Returning "<< successful << std::endl;
     return successful;
 
 }
@@ -749,11 +748,9 @@ int setShips(session *gameSession, client *serverConnection)
         bool shipSet = gameSession->setShip(pickedRow, pickedColumn, direction, placementOrder.at(countSet));
         if(shipSet)
         {
-            std::cout << "sending ship to server..." << std::endl;
             status = sendShipToServer(serverConnection, pickedRow, pickedColumn, direction, placementOrder.at(countSet));
             if(status > 0)
             {
-                std::cout << "ship sent to server" << std::endl;
                 countSet++;
                 internalShipCount++;
                 if(countSet == 4 || countSet == 7 || countSet == 9 || countSet == 10)
@@ -797,10 +794,12 @@ int sendShotToServer(client *serverConnection, int row, int column)
         int hit = int(serverConnection->msgBody[1]);
         if(hit == 6 ||hit == 2)
         {
+            std::cout << "Ship hit" << std::endl;
             return 1;
         }
         else if(hit == 7 ||hit == 3)
         {
+            std::cout << "Ship destroyed" << std::endl;
             return 2;
         }
         else
@@ -975,17 +974,17 @@ int main(int argc, char* argv[])
                 bool stillPickingHisShot = true;
                 while(stillPickingHisShot)
                 {
-                    receivedType = waitForMessage(serverConnection, 500, 134);
+                    receivedType = waitForMessage(serverConnection, 1000, 134);
                     if (receivedType == 134)
                     {
                         stillPickingHisShot = false;
                     }
                     else if (receivedType == 135)
                     {
+                        displayBoards(gameSession);
                         std::cout
                                 << "You opponent has destroyed all your ships, the game is over now and and you have lost"
                                 << std::endl;
-                        displayBoards(gameSession);
                         exit(0);
                     }
                 }
