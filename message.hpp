@@ -1,27 +1,24 @@
 //
-// chat_message.hpp
+// message.hpp
 // ~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2017 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+// This has been made using the official boost example for a chat server application.
 //
 
-#ifndef CHAT_MESSAGE_HPP
-#define CHAT_MESSAGE_HPP
+#ifndef MESSAGE_HPP
+#define MESSAGE_HPP
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-class chat_message
+class message
 {
 public:
   enum { header_length = 1 };
   enum { max_body_length = 512 };
 
-  chat_message()
+  message()
     : body_length_(0)
   {
   }
@@ -140,4 +137,4 @@ private:
   std::size_t body_length_;
 };
 
-#endif // CHAT_MESSAGE_HPP
+#endif // MESSAGE_HPP

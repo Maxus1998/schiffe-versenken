@@ -12,13 +12,10 @@ if(NOT Boost_FOUND)
 endif()
 
 
-add_executable(schiffe-versenken main.cpp)
-add_executable(server chat_server.cpp Schiffe_versenken.cpp Schiffe_versenken.hpp)
-add_executable(client chat_client.cpp)
-add_executable(test_client test_client.cpp)
+add_executable(client client.cpp)
+add_executable(server server.cpp Schiffe_versenken.cpp Schiffe_versenken.hpp)
 
-target_link_libraries(schiffe-versenken ${Boost_LIBRARIES})
-target_link_libraries(schiffe-versenken ${Boost_INCLUDE_DIRS}/stage/lib/*)
-target_link_libraries(server ${Boost_INCLUDE_DIRS}/stage/lib/*)
+
+target_link_libraries(client ${Boost_LIBRARIES})
 target_link_libraries(client ${Boost_INCLUDE_DIRS}/stage/lib/*)
-target_link_libraries(test_client ${Boost_INCLUDE_DIRS}/stage/lib/*)
+target_link_libraries(server ${Boost_INCLUDE_DIRS}/stage/lib/*)

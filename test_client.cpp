@@ -5,18 +5,18 @@
 #include <iostream>
 #include <thread>
 #include <boost/asio.hpp>
-#include "chat_message.hpp"
+#include "message.hpp"
 #include <chrono>
 #include <thread>
 
 using boost::asio::ip::tcp;
 
-typedef std::deque<chat_message> chat_message_queue;
+typedef std::deque<message> message_queue;
 
-class chat_client
+class client
 {
 public:
-  chat_client(boost::asio::io_context& io_context,
+  client(boost::asio::io_context& io_context,
       const tcp::resolver::results_type& endpoints)
     : io_context_(io_context),
       socket_(io_context)
@@ -24,7 +24,7 @@ public:
     do_connect(endpoints);
   }
 
-  void write(const chat_message& msg)
+  void write(const message& msg)
   {
     boost::asio::post(io_context_,
         [this, msg]()
@@ -80,7 +80,7 @@ private:
   void do_read_header()
   {
     boost::asio::async_read(socket_,
-        boost::asio::buffer(read_msg_.data(), chat_message::header_length),
+        boost::asio::buffer(read_msg_.data(), message::header_length),
         [this](boost::system::error_code ec, std::size_t /*length*/)
         {
           std::cout << int(read_msg_.data()[0]) << std::endl;
@@ -163,8 +163,8 @@ private:
 private:
   boost::asio::io_context& io_context_;
   tcp::socket socket_;
-  chat_message read_msg_;
-  chat_message_queue write_msgs_;
+  message read_msg_;
+  message_queue write_msgs_;
 };
 
 int main(int argc, char* argv[])
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
   {
     if (argc != 3)
     {
-      std::cerr << "Usage: chat_client <host> <port>\n";
+      std::cerr << "Usage: client <host> <port>\n";
       return 1;
     }
 
@@ -181,14 +181,14 @@ int main(int argc, char* argv[])
 
     tcp::resolver resolver(io_context);
     auto endpoints = resolver.resolve(argv[1], argv[2]);
-    chat_client *c = new chat_client(io_context, endpoints);
+    client *c = new client(io_context, endpoints);
 
     std::thread t([&io_context](){ io_context.run(); });
     while(true) {
       char header;
       int input1;
       int input2;
-      char line[chat_message::max_body_length + 1] = "";
+      char line[message::max_body_length + 1] = "";
       std::cout << "Please choose Header" << std::endl;
       std::cin >> input1;
       if (input1 == 100) {
@@ -244,7 +244,7 @@ int main(int argc, char* argv[])
           case 255: header = 0b11111111;
                     break;
       }
-      chat_message msg;
+      message msg;
       msg.encode_header(header);
       if (input1 != 0 && input1 != 1 && input1 != 6 && input1 != 127) {
           std::cout << "Please choose Body" << std::endl;

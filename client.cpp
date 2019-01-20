@@ -1,17 +1,22 @@
-//This Client is NOT part of the actual application. It is merely used to help test the server functionality
+//
+// client.cpp
+// ~~~~~~~~~~~~~~~
+//
+// This has been made using the official boost example for a chat server application.
+//
 
 #include <cstdlib>
 #include <deque>
 #include <iostream>
 #include <thread>
 #include <boost/asio.hpp>
-#include "chat_message.hpp"
+#include "message.hpp"
 #include <chrono>
 #include <thread>
 
 using boost::asio::ip::tcp;
 
-typedef std::deque<chat_message> chat_message_queue;
+typedef std::deque<message> message_queue;
 
 const int defaultTimeout = -1;
 
@@ -279,10 +284,10 @@ public:
     }
 };
 
-class chat_client
+class client
 {
 public:
-    chat_client(
+    client(
             boost::asio::io_context& io_context
             , const tcp::resolver::results_type& endpoints
             , session *gameSession
@@ -295,7 +300,7 @@ public:
     int messageType = 0;
     char* msgBody;
 
-    void write(const chat_message& msg)
+    void write(const message& msg)
     {
         boost::asio::post(io_context_,
                           [this, msg]()
@@ -352,7 +357,7 @@ private:
 //        std::cout << "message received" << std::endl;
         messageReceived = true;
         boost::asio::async_read(socket_,
-                                boost::asio::buffer(read_msg_.data(), chat_message::header_length),
+                                boost::asio::buffer(read_msg_.data(), message::header_length),
                                 [this](boost::system::error_code ec, std::size_t /*length*/)
                                 {
                                     messageType = int(read_msg_.data()[0]);
@@ -440,8 +445,8 @@ private:
     session *runningGame;
     boost::asio::io_context& io_context_;
     tcp::socket socket_;
-    chat_message read_msg_;
-    chat_message_queue write_msgs_;
+    message read_msg_;
+    message_queue write_msgs_;
 };
 
 bool is_number(const std::string& s)
@@ -449,7 +454,7 @@ bool is_number(const std::string& s)
     return !s.empty() && std::find_if(s.begin(), s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
 }
 
-int waitForMessage(chat_client *c, int timeout, int type = 0)
+int waitForMessage(client *c, int timeout, int type = 0)
 {
     auto start = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
@@ -469,14 +474,14 @@ int waitForMessage(chat_client *c, int timeout, int type = 0)
     return 0;
 }
 
-void requestOngoingGames(chat_client *serverConnection)
+void requestOngoingGames(client *serverConnection)
 {
-    chat_message msg;
+    message msg;
     char header = 0b00000001;
     msg.encode_header(header);
     serverConnection->write(msg);
 }
-void displayGamesList(session *gameSession, chat_client *serverConnection)
+void displayGamesList(session *gameSession, client *serverConnection)
 {
     gameSession->forgetAllGames();
     requestOngoingGames(serverConnection);
@@ -489,9 +494,9 @@ void displayGamesList(session *gameSession, chat_client *serverConnection)
         std::cout << i << ":     " << gameSession->getGameList().at(i) << std::endl;
     }
 }
-bool joinGame(char* gameName, chat_client *serverConnection, session *gameSession)
+bool joinGame(char* gameName, client *serverConnection, session *gameSession)
 {
-    chat_message msg;
+    message msg;
     char header = 0b00000010;
     msg.encode_header(header);
     std::memcpy(msg.body(), gameName, msg.body_length());
@@ -505,7 +510,7 @@ bool joinGame(char* gameName, chat_client *serverConnection, session *gameSessio
 
     return true;
 }
-std::string joinGame(session *gameSession, chat_client *serverConnection)
+std::string joinGame(session *gameSession, client *serverConnection)
 {
     gameSession->setWhoIAm(0);
     std::string chosenOption = "r";
@@ -554,11 +559,11 @@ std::string joinGame(session *gameSession, chat_client *serverConnection)
     }
     return chosenOption;
 }
-bool host(session *gameSession, chat_client *serverConnection)
+bool host(session *gameSession, client *serverConnection)
 {
     gameSession->setWhoIAm(1);
     std::cout << "Hosting a game" << std::endl;
-    chat_message msg;
+    message msg;
     char header = 0b00000000;
     msg.encode_header(header);
     serverConnection->write(msg);
@@ -577,11 +582,11 @@ bool host(session *gameSession, chat_client *serverConnection)
     std::cout << "Player joined" << std::endl;
 }
 
-void setName(session *gameSession, chat_client *serverConnection)
+void setName(session *gameSession, client *serverConnection)
 {
-    chat_message msg;
+    message msg;
     msg.encode_header(0b00000101);
-    char line[chat_message::max_body_length + 1];
+    char line[message::max_body_length + 1];
     std::cout << "Please enter your name: ";
     std::cin >> line;
     std::memcpy(msg.body(), line, msg.body_length());
@@ -642,15 +647,15 @@ bool checkCharInVector(std::vector<char> *theVector, char theChar)
     return inVector;
 }
 
-int sendShipToServer(chat_client *serverConnection, char row, int column, int direction, char shipType)
+int sendShipToServer(client *serverConnection, char row, int column, int direction, char shipType)
 {
     int successful = 0;
     int rowNumber = int(row) - 97;
     if(rowNumber < 0) rowNumber = rowNumber + 32;
     int position = rowNumber * 10 + column;
-    chat_message msg;
+    message msg;
     msg.encode_header(0b00000011);
-    char line[chat_message::max_body_length + 1] = "";
+    char line[message::max_body_length + 1] = "";
     line[0] = position;
     char shipAndDirection = 0;
     switch(shipType)
@@ -697,7 +702,7 @@ int sendShipToServer(chat_client *serverConnection, char row, int column, int di
 
 }
 
-int setShips(session *gameSession, chat_client *serverConnection)
+int setShips(session *gameSession, client *serverConnection)
 {
     std::cout << "Now is the time to place your ships on the field" << std::endl;
     std::cout << "You got submarines (s), cruiser (c), destroyer (d) and battleships (b)" << std::endl;
@@ -768,12 +773,12 @@ int setShips(session *gameSession, chat_client *serverConnection)
     return status;
 }
 
-int sendShotToServer(chat_client *serverConnection, int row, int column)
+int sendShotToServer(client *serverConnection, int row, int column)
 {
     int position = row * 10 + column;
-    chat_message msg;
+    message msg;
     msg.encode_header(0b00000100);
-    char line[chat_message::max_body_length + 1] = "";
+    char line[message::max_body_length + 1] = "";
     line[0] = position;
     std::memcpy(msg.body(), line, msg.body_length());
     serverConnection->write(msg);
@@ -814,7 +819,7 @@ void displayBoards(session *gameSession)
     displayBoardShips(gameSession);
     displayBoardShots(gameSession);
 }
-void shoot(chat_client *serverConnection, session *gameSession)
+void shoot(client *serverConnection, session *gameSession)
 {
     std::cout << "pick where you want to shoot" << std::endl;
     displayBoardShots(gameSession);
@@ -883,7 +888,7 @@ int main(int argc, char* argv[])
         tcp::resolver resolver(io_context);
         auto endpoints = resolver.resolve(hostAddress, hostPort);
         auto *gameSession = new session();
-        auto *serverConnection = new chat_client(io_context, endpoints, gameSession);
+        auto *serverConnection = new client(io_context, endpoints, gameSession);
 
         std::thread t([&io_context](){ io_context.run(); });
 
@@ -893,7 +898,7 @@ int main(int argc, char* argv[])
 
         waitForMessage(serverConnection, defaultTimeout);
 
-        char line[chat_message::max_body_length + 1];
+        char line[message::max_body_length + 1];
         std::cout << std::endl;
         std::cout << "Do you want to join (j) into one of the games or to host a own game (h):" << std::endl;
         std::cin >> line;
